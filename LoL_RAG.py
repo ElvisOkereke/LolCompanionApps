@@ -17,15 +17,13 @@ from openai import OpenAI
 #--- STEP 1: ENHANCED DATA STRUCTURE ---
 
 def create_matchup_dataset():
-    """Create a comprehensive matchup dataset that captures lane interactions"""
-    
-    # Define sample matchup data - in a real implementation, this would be much more extensive
+
     matchups = [
         {
             "champion1": "Darius",
             "champion2": "Garen",
             "lane": "top",
-            "difficulty": 3,  # Scale of 1-10, where 10 is extremely difficult
+            "difficulty": 3,  
             "winner_favored": "Darius",
             "win_rate": 56.4,
             "matchup_details": {
@@ -145,52 +143,6 @@ def create_matchup_dataset():
     
     return matchups
 
-def create_bidirectional_matchups(matchups):
-    """
-    Create a bidirectional dataset that views each matchup from both perspectives
-    """
-    bidirectional_matchups = []
-    
-    for matchup in matchups:
-        # Original direction
-        bidirectional_matchups.append(matchup)
-        
-        # Reversed direction
-        reversed_matchup = {
-            "champion1": matchup["champion2"],
-            "champion2": matchup["champion1"],
-            "lane": matchup["lane"],
-            "difficulty": 10 - matchup["difficulty"],  # Invert difficulty
-            "winner_favored": matchup["champion2"] if matchup["winner_favored"] == matchup["champion1"] else matchup["champion1"],
-            "win_rate": 100 - matchup["win_rate"],
-            "matchup_details": {
-                "early_game": matchup["matchup_details"]["early_game"],  # Reinterpret for reversed perspective
-                "mid_game": matchup["matchup_details"]["mid_game"],
-                "late_game": matchup["matchup_details"]["late_game"],
-                "team_fights": matchup["matchup_details"]["team_fights"]
-            },
-            "champion1_strategy": matchup["champion2_strategy"],
-            "champion2_strategy": matchup["champion1_strategy"],
-            "key_abilities": {
-                "champion1": matchup["key_abilities"]["champion2"],
-                "champion2": matchup["key_abilities"]["champion1"]
-            },
-            "itemization": {
-                "champion1": matchup["itemization"]["champion2"],
-                "champion2": matchup["itemization"]["champion1"]
-            }
-        }
-        
-        bidirectional_matchups.append(reversed_matchup)
-    
-    # Convert to DataFrame
-    bidir_df = pd.DataFrame(bidirectional_matchups)
-    
-    # Save to CSV
-    bidir_df.to_csv("lol_bidirectional_matchups.csv", index=False)
-    
-    print("Bidirectional matchup dataset created and saved!")
-    return bidir_df
 
 def create_document_chunks(matchups):
     """
@@ -315,8 +267,7 @@ def extract_champion_names(query):
     Extract champion names from user query to improve retrieval
     A more robust implementation could use NER or a dictionary lookup
     """
-    # This is a simplified version - in a real implementation, you'd have a complete
-    # list of champions and use NLP techniques for better extraction
+    
     common_champions = [
         "Darius", "Garen", "Ahri", "Zed", "Jinx", "Lucian", "Lee Sin", "Elise",
         "Leona", "Morgana", "Yasuo", "Lux", "Thresh", "Ezreal", "Jhin"
@@ -405,7 +356,7 @@ def generate_response(query, retrieved_contexts):
     
     client = OpenAI(
         base_url = "https://integrate.api.nvidia.com/v1",
-        api_key = "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"
+        api_key = "$API_KEY"
     )
 
     response = client.chat.completions.create(
@@ -426,10 +377,10 @@ def generate_response(query, retrieved_contexts):
 # --- STEP 5: USER INTERFACE ---
 
 def create_ui(vector_db):
-    """Create a simple Gradio interface"""
+  
     
     def answer_query(query, additional_context=""):
-        """Process user query and return response"""
+
         
         # Combine query with additional context if provided
         full_query = query
@@ -450,10 +401,8 @@ def create_ui(vector_db):
         # In production, you would remove the debug info
         return response + context_info if debug_mode else response
     
-    # Set debug mode (set to False for production)
-    debug_mode = True
+    debug_mode = False
     
-    # Create Gradio interface with improved layout
     with gr.Blocks(title="League of Legends Matchup Assistant") as interface:
         gr.Markdown("# League of Legends Matchup Assistant")
         gr.Markdown("Ask questions about champion matchups, counters, and strategies!")
@@ -497,19 +446,16 @@ def create_ui(vector_db):
     
     return interface
 
-# --- MAIN EXECUTION ---
 
 def main():
-    """Main function to run the application"""
+    
     print("Initializing League of Legends Matchup RAG bot...")
     
-    # Create dataset
+    
     print("Creating matchup dataset...")
     matchups = create_matchup_dataset()
 
-    bidrect = create_bidirectional_matchups(matchups)
     
-    # Create document chunks for embedding
     print("Processing data into retrievable chunks...")
     documents, metadata = create_document_chunks(matchups)
     #bi_documents, bi_metadata = create_document_chunks(bidrect)
@@ -521,11 +467,10 @@ def main():
     #vector_db.add_documents(bi_documents, bi_metadata)
     print(f"Added {len(documents)} document chunks to vector database")
     
-    # Create and launch UI
     print("Creating user interface...")
     ui = create_ui(vector_db)
     print("Launching interface. This may take a moment...")
-    ui.launch(share=True)  # Set share=False in production
+    ui.launch(share=True)  # Set share=False in prod
 
 if __name__ == "__main__":
     main()
